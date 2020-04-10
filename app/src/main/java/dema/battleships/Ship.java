@@ -2,23 +2,22 @@ package dema.battleships;
 
 public class Ship
 {
-    Rotation rotation;
-    ShipType type;
-    boolean[] tiles; //True is hit
+    public int x, y;
+    public Rotation rotation;
+    public ShipType type;
     private int length;
 
 
-    public Ship(Rotation rotation, ShipType type)
+    public Ship(Rotation rotation, ShipType type, int x, int y)
     {
         this.rotation = rotation;
         this.length = type.ordinal()+1;
         this.type = ShipType.values()[length-1];
-        tiles = new boolean[length];
-        for(int i = 0; i < tiles.length; i++)
-        {
-            tiles[i] = false;
-        }
+        this.x = x;
+        this.y = y;
     }
+
+
 
     public int getLength()
     {
@@ -34,4 +33,6 @@ public class Ship
     {
         return "Ship @" + type + "[" + rotation + "]";
     }
+
+
 }

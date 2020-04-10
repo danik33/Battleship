@@ -8,6 +8,7 @@ public enum Rotation
 
     public static Rotation random()
     {
+        String a = "";
         if(Math.random() < 0.5)
             return VERTICAL;
         else

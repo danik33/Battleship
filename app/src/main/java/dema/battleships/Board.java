@@ -94,9 +94,10 @@ public class Board {
             int x,y;
             do
             {
-                tr = new Ship(Rotation.random(), s);
                 x = rand(0, 9);
                 y = rand(0, 9);
+                tr = new Ship(Rotation.random(), s, x ,y);
+
             } while(!canPlace(tr, x, y));
 
             setShip(tr, x, y);
