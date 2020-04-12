@@ -8,7 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.os.Build;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.view.MotionEvent;
@@ -23,22 +23,27 @@ public class Game extends Activity {
 
     Bitmap bitmap, buffer;
     Bitmap back, mid, front;
+    Bitmap explosion, xMark, background;
     Paint paint;
     Canvas cv;
     View decorView;
 
-    Board board;
+
     GameStage gameStage;
 
 
     int screenWidth, screenHeight;
     int x;
     boolean right;
-    int squareSize = convert(9.2, false);
-    int offsetX = convert(4, true);
-    int offsetY = convert(4, false);
+    int squareSize;
+    int offsetX;
+    int offsetY;
 
     ArrayList<Ship> player1, player2;
+    Board boardP1, boardP2;
+    boolean player1Turn;
+
+    ShipType selected;
 
 
     Thread redrawing, logic;
@@ -51,8 +56,13 @@ public class Game extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        player1 = new ArrayList<Ship>();
-        player2 = new ArrayList<Ship>();
+
+        gameStage = GameStage.Player1Ships;
+        boardP1 = new Board();
+        boardP2 = new Board();
+
+        player1 = new ArrayList<>();
+        player2 = new ArrayList<>();
 
         placeShip(true, new Ship(Rotation.HORIZONTAL, ShipType.CELL5, 2, 2));
         placeShip(true, new Ship(Rotation.VERTICAL, ShipType.CELL1, 6, 6));
@@ -63,8 +73,7 @@ public class Game extends Activity {
         decorView.setSystemUiVisibility(uiOptions);
 
 
-        gameStage = GameStage.Player1Ships;
-        board = new Board();
+
 
         //Resolution
         DisplayMetrics displayMetrics = new DisplayMetrics();
@@ -165,11 +174,39 @@ public class Game extends Activity {
         int tileX, tileY;
         tileX = ((int) x - offsetX) / squareSize;
         tileY = ((int) y - offsetY) / squareSize;
+
+
 //
         if (tileX >= 0 && tileX < 10 && tileY >= 0 && tileY < 10)  //Board touch
         {
-            board.shoot(tileX, tileY);
+            if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
+            {
+                if(x)
+            }
+            else if(gameStage == GameStage.Game)
+            {
+                if(player1Turn)
+                    boardP2.shoot(tileX, tileY);
+                else
+                    boardP1.shoot(tileX, tileY);
+                player1Turn = !player1Turn;
+            }
+
         }
+        else
+        {
+            if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
+            {
+                if(x)
+            }
+        }
+    }
+
+
+    public ShipType touched(double x, double y)
+    {
+        
+        return null;
     }
 
 
@@ -178,10 +215,15 @@ public class Game extends Activity {
         back = BitmapFactory.decodeResource(res, R.drawable.back);
         mid = BitmapFactory.decodeResource(res, R.drawable.mid);
         front = BitmapFactory.decodeResource(res, R.drawable.front);
+        xMark = BitmapFactory.decodeResource(res, R.drawable.xsign);
+        explosion = BitmapFactory.decodeResource(res, R.drawable.explosion);
+        background = BitmapFactory.decodeResource(res, R.drawable.bg);
 
         back = Bitmap.createScaledBitmap(back, squareSize, squareSize, false);
         mid = Bitmap.createScaledBitmap(mid, squareSize, squareSize, false);
         front = Bitmap.createScaledBitmap(front, squareSize, squareSize, false);
+        xMark = Bitmap.createScaledBitmap(xMark, squareSize, squareSize, false);
+        explosion = Bitmap.createScaledBitmap(explosion, squareSize, squareSize, false);
 
     }
 
@@ -198,9 +240,15 @@ public class Game extends Activity {
     public void placeShip(boolean player1, Ship ship)
     {
         if(player1)
+        {
             this.player1.add(ship);
+            boardP1.setShip(ship);
+        }
         else
+        {
             this.player2.add(ship);
+            boardP2.setShip(ship);
+        }
     }
 
 
@@ -257,21 +305,63 @@ public class Game extends Activity {
         buffer = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.RGB_565);
         cv = new Canvas(buffer);
 
-
-        draw();
+        switch(gameStage)
+        {
+            case Player1Ships:
+                drawStage1();
+                break;
+            case PassTO:
+                drawPassing();
+                break;
+            case Player2Ships:
+                drawStage2();
+                break;
+            case Game:
+                drawGame();
+                break;
+        }
         bitmap = buffer.copy(buffer.getConfig(), true);
 
         canvas.setImageBitmap(bitmap);
         canvas.invalidate();
     }
 
-    public void draw()   //The actual drawing
+    private void drawGame()
     {
-        //Clear everything
+    }
+
+    private void drawPassing()
+    {
+    }
+
+    public void drawStage2()
+    {
+
+    }
+
+    public void drawBackground()
+    {
+        paint.setColor(Color.rgb(240,240, 240));
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.rgb(240,240,240));
-        cv.drawRect(0, 0, screenWidth, screenHeight, paint);
-        //
+        cv.drawRect(new Rect(0, 0, screenWidth, screenHeight), paint);
+    }
+
+    public void drawGrid(int x, int y)
+    {
+        for(int i = 0; i < 10; i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                cv.drawRect( x + i*squareSize, y + j*squareSize, x + (i+1)*squareSize, y +  (j+1)*squareSize, paint);
+            }
+        }
+    }
+
+
+
+    public void drawStage1()   //The actual drawing
+    {
+        drawBackground();
 
 
         //Drawing grid
@@ -280,44 +370,44 @@ public class Game extends Activity {
         paint.setColor(Color.BLACK);
 
 
-        for(int i = 0; i < 10; i++)
-        {
-            for(int j = 0; j < 10; j++)
-            {
-                cv.drawRect( offsetX + i*squareSize, offsetY + j*squareSize, offsetX + (i+1)*squareSize, offsetY +  (j+1)*squareSize, paint);
-            }
-        }
+        drawGrid(offsetX, offsetY);
 
+        drawChoosingShips();
 
-        //Filling grid
-        paint.setStyle(Paint.Style.FILL);
-        for(int i = 0; i < 10; i++)
-        {
-            for(int j = 0; j < 10; j++)
-            {
-                if(board.getTile(i, j).isShot())
-                    cv.drawRect( offsetX + i*squareSize, offsetY + j*squareSize, offsetX + (i+1)*squareSize, offsetY +  (j+1)*squareSize, paint);
-            }
-        }
 
         for(Ship p : player1)
         {
             cv.drawBitmap(createShipPic(p), offsetX + p.x*squareSize, offsetY + p.y*squareSize, null);
         }
 
-
-        //
-        paint.setColor(Color.RED);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(10);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            cv.drawRoundRect(x, 100, x+400, 500, 50,50, paint);
+        for(int i = 0; i < 10; i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                if(boardP1.getTile(i, j).isShot())
+                {
+                    if(boardP1.hasShip(i, j))
+                        cv.drawBitmap(explosion, offsetX + i * squareSize, offsetY + j * squareSize, null);
+                    else
+                        cv.drawBitmap(xMark, offsetX + i * squareSize, offsetY + j * squareSize, null);
+                }
+            }
         }
+
+
+
 
 
     }
 
+    private void drawChoosingShips()
+    {
+        cv.drawBitmap(createShipPic(ShipType.CELL2, Rotation.HORIZONTAL), convert(75, true), convert(80, false), null);
+        cv.drawBitmap(createShipPic(ShipType.CELL3, Rotation.HORIZONTAL), convert(75, true), convert(60, false), null);
+        cv.drawBitmap(createShipPic(ShipType.CELL4, Rotation.HORIZONTAL), convert(75, true), convert(40, false), null);
+        cv.drawBitmap(createShipPic(ShipType.CELL5, Rotation.HORIZONTAL), convert(75, true), convert(20, false), null);
 
+    }
 
 
 }

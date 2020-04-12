@@ -39,8 +39,9 @@ public class Board {
 
     }
 
-    public void setShip(Ship s, int x, int y)
+    public void setShip(Ship s)
     {
+        int x = s.x, y = s.y;
         System.out.println(s + ": (" + x + ", " + y + ")");
         for(int i = 0; i < s.getLength(); i++)
         {
@@ -54,8 +55,18 @@ public class Board {
         }
     }
 
-    public boolean canPlace(Ship s, int x, int y)  //TODO FIX HOOYNA
+    public boolean hasShip(int x, int y) { return tiles[x][y].hasShip();}
+
+    public void registerShip(Ship s)
     {
+
+    }
+
+
+    public boolean canPlace(Ship s)
+    {
+        int x = s.x;
+        int y = s.y;
         if(x < 0 || y < 0)
             return false;
         if(s.getRotation() == Rotation.HORIZONTAL)
@@ -98,9 +109,9 @@ public class Board {
                 y = rand(0, 9);
                 tr = new Ship(Rotation.random(), s, x ,y);
 
-            } while(!canPlace(tr, x, y));
+            } while(!canPlace(tr));
 
-            setShip(tr, x, y);
+            setShip(tr);
         }
     }
 
