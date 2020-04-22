@@ -18,6 +18,13 @@ public class Ship
     }
 
 
+    public Ship clone()
+    {
+        return new Ship(this.rotation, this.type, this.x, this.y);
+    }
+
+
+
 
     public int getLength()
     {

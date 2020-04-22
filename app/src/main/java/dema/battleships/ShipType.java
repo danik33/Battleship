@@ -1,5 +1,7 @@
 package dema.battleships;
 
+import java.util.ArrayList;
+
 public enum ShipType {
     CELL1,
     CELL2,
@@ -15,9 +17,21 @@ public enum ShipType {
         return new ShipType[]{CELL5, CELL4, CELL3, CELL2, CELL2, CELL1, CELL1};
     }
 
-    public static ShipType[] getFleetV2()
+    public static ArrayList<ShipType> getFleetV2()
     {
-        return new ShipType[]{CELL5, CELL4, CELL4, CELL3, CELL3, CELL3, CELL2, CELL2, CELL2, CELL2};
+        ArrayList<ShipType> arr = new ArrayList<>();
+        arr.add(CELL5);
+        arr.add(CELL4);
+        arr.add(CELL4);
+        arr.add(CELL3);
+        arr.add(CELL3);
+        arr.add(CELL3);
+        arr.add(CELL2);
+        arr.add(CELL2);
+        arr.add(CELL2);
+        arr.add(CELL2);
+
+        return arr;
     }
 
 

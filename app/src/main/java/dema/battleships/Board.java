@@ -48,7 +48,6 @@ public class Board {
 
             if(s.getRotation() == Rotation.HORIZONTAL)
                 tiles[x + i][y].setShip();
-
             else
                 tiles[x][y + i].setShip();
 
