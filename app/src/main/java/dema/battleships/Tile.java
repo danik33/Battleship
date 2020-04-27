@@ -25,9 +25,12 @@ public class Tile {
         return this.ship;
     }
 
-    public void shoot()
+    public boolean shoot()
     {
         this.beenshot = true;
+        if(this.ship)
+            return true;
+        return false;
     }
 
     public void setShip()

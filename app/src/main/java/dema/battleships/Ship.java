@@ -6,6 +6,7 @@ public class Ship
     public Rotation rotation;
     public ShipType type;
     private int length;
+    boolean[] hit;
 
 
     public Ship(Rotation rotation, ShipType type, int x, int y)
@@ -15,6 +16,9 @@ public class Ship
         this.type = ShipType.values()[length-1];
         this.x = x;
         this.y = y;
+        hit = new boolean[length];
+        for(int i = 0; i < hit.length; i++)
+            hit[i] = false;
     }
 
 
@@ -23,6 +27,22 @@ public class Ship
         return new Ship(this.rotation, this.type, this.x, this.y);
     }
 
+
+    public boolean hitSlot(int slot)
+    {
+        hit[slot] = true;
+        return shipSank();
+    }
+
+    public boolean shipSank()
+    {
+        for(int i = 0; i < hit.length; i++)
+        {
+            if(!hit[i])
+                return false;
+        }
+        return true;
+    }
 
 
 

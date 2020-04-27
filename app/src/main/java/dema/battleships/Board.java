@@ -1,30 +1,17 @@
 package dema.battleships;
 
 
+import android.graphics.Point;
 
+import java.util.ArrayList;
 
 public class Board {
 
 
     private Tile[][] tiles;
 
-//    public static void main(String[] args)
-//    {
-//        Board t = new Board();
-//        t.randomizeShips();
-//        for(int j = 0; j < 10; j++)
-//        {
-//            for(int i = 0; i < 10; i++)
-//            {
-//                if(t.tiles[i][j].hasShip())
-//                    System.out.print(1 +" ");
-//                else
-//                    System.out.print(0 + " ");
-//            }
-//            System.out.println();
-//        }
-//
-//    }
+    private ArrayList<Ship> ships;
+
 
     public Board()
     {
@@ -36,6 +23,7 @@ public class Board {
                 tiles[i][j] = new Tile();
             }
         }
+        ships = new ArrayList<Ship>();
 
     }
 
@@ -43,23 +31,29 @@ public class Board {
     {
         int x = s.x, y = s.y;
         System.out.println(s + ": (" + x + ", " + y + ")");
-        for(int i = 0; i < s.getLength(); i++)
+        Point[] shipTiles = getShipTiles(s);
+        for(Point p : shipTiles)
+            tiles[p.x][p.y].setShip();
+
+        ships.add(s);
+    }
+
+    public Point[] getShipTiles(Ship p)
+    {
+        Point[] til = new Point[p.getLength()];
+        for(int i = 0; i < p.getLength(); i++)
         {
 
-            if(s.getRotation() == Rotation.HORIZONTAL)
-                tiles[x + i][y].setShip();
+            if(p.getRotation() == Rotation.HORIZONTAL)
+                til[i] = new Point(p.x + i,p.y);
             else
-                tiles[x][y + i].setShip();
-
+                til[i] = new Point(p.x ,p.y+ i);
         }
+        return til;
     }
 
     public boolean hasShip(int x, int y) { return tiles[x][y].hasShip();}
 
-    public void registerShip(Ship s)
-    {
-
-    }
 
 
     public boolean canPlace(Ship s)
@@ -95,34 +89,50 @@ public class Board {
         return true;
     }
 
-    public void randomizeShips()
+
+    public boolean shoot(int x, int y)
     {
-        ShipType[] fleet = ShipType.getFleet();
-        for(ShipType s : fleet)
+        boolean hit = tiles[x][y].shoot();
+        if(hit)
         {
-            Ship tr;
-            int x,y;
-            do
+            for(Ship s : ships)
             {
-                x = rand(0, 9);
-                y = rand(0, 9);
-                tr = new Ship(Rotation.random(), s, x ,y);
+                Point[] shipTiles = getShipTiles(s);
+                for(int i = 0; i < shipTiles.length; i++)
+                {
+                    if(shipTiles[i].equals(x, y))
+                    {
+                        if(s.hitSlot(i))
+                        {
+                            shootAround(s);
+                        }
+                    }
+                }
+            }
+        }
+        return hit;
+    }
 
-            } while(!canPlace(tr));
+    private void shootAround(Ship s)
+    {
+        for(Point p : getShipTiles(s))
+            shootAround(p.x, p.y);
+    }
 
-            setShip(tr);
+    private void shootAround(int x, int y)
+    {
+        for(int i = x - 1; i <= x + 1; i++)
+        {
+            for (int j = y - 1; j <= y + 1; j++)
+            {
+                if(i >= 0 && i < 10 && j >= 0 && j < 10)
+                {
+                    tiles[i][j].shoot();
+                }
+            }
         }
     }
 
-    public int rand(int min, int max)
-    {
-        return (int) (Math.random()*(max-min+1)+min);
-    }
-
-    public void shoot(int x, int y)
-    {
-        tiles[x][y].shoot();
-    }
 
     public Tile getTile(int x, int y)
     {

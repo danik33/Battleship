@@ -14,4 +14,12 @@ public enum Rotation
         else
             return HORIZONTAL;
     }
+
+    public Rotation invert()
+    {
+        if(this == VERTICAL)
+            return HORIZONTAL;
+        return VERTICAL;
+    }
+
 }

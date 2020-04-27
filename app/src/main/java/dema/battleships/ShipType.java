@@ -12,9 +12,9 @@ public enum ShipType {
 
 
 
-    public static ShipType[] getFleet()
+    public static ArrayList<ShipType> getClearFleet()
     {
-        return new ShipType[]{CELL5, CELL4, CELL3, CELL2, CELL2, CELL1, CELL1};
+        return new ArrayList<>();
     }
 
     public static ArrayList<ShipType> getFleetV2()

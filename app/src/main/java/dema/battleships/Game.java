@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
@@ -17,6 +18,10 @@ import android.view.View;
 import android.widget.ImageView;
 
 import java.util.ArrayList;
+
+import dema.battleships.dema.battleships.UI.Action;
+import dema.battleships.dema.battleships.UI.MyButton;
+import dema.battleships.dema.battleships.UI.UI;
 
 import static dema.battleships.ColorFilter.Normal;
 
@@ -43,15 +48,23 @@ public class Game extends Activity {
     int x;
     boolean right;
     int squareSize;
+    float gameSquareSize;
     int offsetX;
     int offsetY;
+    int backgroundColor;
+
+    Point offsetP1, offsetP2;
+    Point lastTileTouched;
 
     ArrayList<Ship> player1, player2;
     Board boardP1, boardP2;
     boolean player1Turn;
     ArrayList<ShipType> p1Fleet, p2Fleet;
+    MyButton setShip, rotateButton, reset, random, next;
 
     Bitmap[] ships;
+
+    Bitmap arrow[];
 
 
     ShipType selected;
@@ -60,10 +73,13 @@ public class Game extends Activity {
     Rotation tempRotation;
     boolean tempCanPlace;
 
+    UI ui;
+
 
 
 
     Thread redrawing, logic;
+
 
 
     @Override
@@ -73,9 +89,9 @@ public class Game extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
+        backgroundColor = Color.rgb(240,240,240);
 
-
-        ships = new Bitmap[8];
+        ships = new Bitmap[16];
 
         gameStage = GameStage.Player1Ships;
         boardP1 = new Board();
@@ -88,6 +104,8 @@ public class Game extends Activity {
         p2Fleet = ShipType.getFleetV2();
 
         player1Turn = true;
+
+        arrow = new Bitmap[2];
 
 
 
@@ -111,8 +129,13 @@ public class Game extends Activity {
         screenHeight = displayMetrics.heightPixels;
 
         squareSize = convert(9.2, false);
+        gameSquareSize = squareSize*0.85f;
         offsetX = convert(4, true);
         offsetY = convert(4, false);
+        offsetP1 = new Point(offsetX, offsetY + convert(10, false));
+        offsetP2 = new Point(convert(57, true), offsetY + convert(10, false));
+
+
 
         shipSelec = new Rect[4];
         int twenty = convert(20, false);
@@ -126,12 +149,17 @@ public class Game extends Activity {
         tempCanPlace = true;
 
         rotate = new Rect(convert(53, true), convert(77, false), convert(53, true) + squareSize*2, convert(77, false) + squareSize *2 + 7  );
-        place = new Rect(convert(53, true), convert(57, false), convert(53, true) + squareSize*2, convert(57, false) + squareSize*2 + 7  );
+//        place = new Rect(convert(53, true), convert(57, false), convert(53, true) + squareSize*2, convert(57, false) + squareSize*2 + 7  );
 
         readImages();
 
 
+        initUI();
+
+
         //Setting up drawing part;
+
+
         canvas = findViewById(R.id.battleground);
         bitmap = Bitmap.createBitmap(screenWidth, screenHeight, Bitmap.Config.RGB_565);
 
@@ -195,6 +223,137 @@ public class Game extends Activity {
 
     }
 
+    private void initUI()
+    {
+        ui = new UI();
+        setShip = new MyButton(convert(53, true), convert(65, false), (int)(squareSize*1.5), (int)(squareSize*1.5));
+        setShip.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.ok));
+        setShip.setAction(new Action()
+        {
+            @Override
+            public void act()
+            {
+                if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
+                {
+                    if (tempShip != null && tempCanPlace)
+                    {
+                        ArrayList<ShipType> k = (player1Turn) ? p1Fleet : p2Fleet;
+                        if(k.contains(tempShip.type))
+                            placeShip(tempShip);
+                        tempShip = null;
+                        if(k.isEmpty())
+                            next.setVisible(true);
+                        else
+                            next.setVisible(false);
+                    }
+                }
+            }
+        });
+
+
+        rotateButton = new MyButton(convert(53, true), convert(80, false), (int)(squareSize*1.5), (int)(squareSize*1.5));
+        rotateButton.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.rotate));
+        rotateButton.setAction(new Action() {
+            @Override
+            public void act()
+            {
+                if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
+                {
+                    tempRotation = tempRotation.invert();
+                    if(tempShip != null)
+                    {
+                        tempShip = new Ship(tempRotation, selected, tempShip.x, tempShip.y);
+                        tempCanPlace = canPlace();
+                    }
+                }
+            }
+        });
+
+        reset = new MyButton(convert(53, true), convert(5, false), (int)(squareSize*1.5), (int)(squareSize*1.5));
+        reset.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.reset));
+        reset.setAction(new Action()
+        {
+            @Override
+            public void act()
+            {
+                resetShips();
+                next.setVisible(false);
+            }
+        });
+
+        random = new MyButton(convert(53, true), convert(20, false), (int)(squareSize*1.5), (int)(squareSize*1.5));
+        random.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.random));
+        random.setAction(new Action()
+        {
+            @Override
+            public void act()
+            {
+                randomizeShips();
+                next.setVisible(true);
+            }
+        });
+
+        next = new MyButton(convert(90, true), convert(88, false), squareSize*2, squareSize);
+        next.setVisible(false);
+        next.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.arrow));
+        next.setAction(new Action()
+        {
+            @Override
+            public void act()
+            {
+                nextStage();
+            }
+        });
+
+        ui.addButton(setShip);
+        ui.addButton(rotateButton);
+        ui.addButton(reset);
+        ui.addButton(random);
+        ui.addButton(next);
+    }
+
+    private void nextStage()
+    {
+        gameStage = gameStage.nextStage();
+        switch(gameStage)
+        {
+            case Player1Ships:
+                rescaleShipImages(squareSize);
+            case Player2Ships:
+                random.setVisible(true);
+                reset.setVisible(true);
+                setShip.setVisible(true);
+                rotateButton.setVisible(true);
+                player1Turn = false;
+                break;
+            case Game:
+                next.setVisible(false);
+                ships = new Bitmap[8];
+                rescaleShipImages((int)gameSquareSize);
+                player1Turn = true;
+            case PassTO:
+                random.setVisible(false);
+                reset.setVisible(false);
+                setShip.setVisible(false);
+                rotateButton.setVisible(false);
+                break;
+        }
+    }
+
+    private void rescaleShipImages(int squareSize)
+    {
+        Resources res = getApplicationContext().getResources();
+        back = BitmapFactory.decodeResource(res, R.drawable.back);
+        mid = BitmapFactory.decodeResource(res, R.drawable.mid);
+        front = BitmapFactory.decodeResource(res, R.drawable.front);
+
+
+        back = Bitmap.createScaledBitmap(back, squareSize, squareSize, false);
+        mid = Bitmap.createScaledBitmap(mid, squareSize, squareSize, false);
+        front = Bitmap.createScaledBitmap(front, squareSize, squareSize, false);
+
+    }
+
 
     /**
      * Converts percentages of screen to pixels
@@ -209,6 +368,49 @@ public class Game extends Activity {
         return (int) Math.floor(screenHeight * (percentage / 100));
     }
 
+    public void randomizeShips()
+    {
+        Board b;
+        if(player1Turn)
+        {
+
+            boardP1 = new Board();
+            b = boardP1;
+            player1.clear();
+            p1Fleet = ShipType.getClearFleet();
+        }
+        else
+        {
+
+            boardP2 = new Board();
+            b = boardP2;
+            player2.clear();
+            p2Fleet = ShipType.getClearFleet();
+        }
+        selected = null;
+        tempShip = null;
+        ArrayList<ShipType> fleet = ShipType.getFleetV2();
+        for(ShipType s : fleet)
+        {
+            Ship tr;
+            int x,y;
+            do
+            {
+                x = rand(0, 9);
+                y = rand(0, 9);
+                tr = new Ship(Rotation.random(), s, x ,y);
+
+            } while(!b.canPlace(tr));
+
+            placeShip(tr);
+        }
+    }
+
+    public int rand(int min, int max)
+    {
+        return (int) (Math.random()*(max-min+1)+min);
+    }
+
 
     private void processTouch(float x, float y) {
         System.out.println("Touch: (" + x + ", " + y + ")");
@@ -217,54 +419,63 @@ public class Game extends Activity {
         tileX = ((int) x - offsetX) / squareSize;
         tileY = ((int) y - offsetY) / squareSize;
 
+
+        boolean hit = ui.press((int)x, (int)y);
+
         if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
         {
             ShipType sh = touched((int)x, (int)y);
             if (selected != null && tileX >= 0 && tileX < 10 && tileY >= 0 && tileY < 10)  //Board touch
             {
+                lastTileTouched = new Point(tileX, tileY);
                 Ship trying = new Ship(tempRotation, selected, tileX, tileY);
-                tempCanPlace = boardP1.canPlace(trying);
+                tempCanPlace = canPlace();
+
                 tempShip = trying.clone();
 
             }
-            else if(new Rect((int)x,(int)y,(int)x+1,(int)y+1).intersect(place))
+            else if(!hit)
             {
-                if(tempCanPlace)
-                {
-                    placeShip(player1Turn, tempShip);
-                    tempShip = null;
-                }
-            }
-            else
-            {
+                ShipType temp = selected;
                 selected = sh;
+                if(temp != selected && tempShip != null && sh != null)
+                {
+                    tempShip = new Ship(tempRotation, sh, lastTileTouched.x, lastTileTouched.y);
+                    tempCanPlace = canPlace();
+                }
                 if(selected == null)
                     tempShip = null;
                 Log.v("dema.battleships", "Selected: " + selected);
             }
 
         }
-
-        if (tileX >= 0 && tileX < 10 && tileY >= 0 && tileY < 10)  //Board touch
+        if(gameStage == GameStage.Game)
         {
+            Point tileHit;
+            if(player1Turn)
+                tileHit = new Point((int)((x-offsetP2.x)/gameSquareSize), (int)((y-offsetP2.y)/gameSquareSize));
+            else
+                tileHit = new Point((int)((x-offsetP1.x)/gameSquareSize), (int)((y-offsetP1.y)/gameSquareSize));
 
-            if(gameStage == GameStage.Game)
+            if (tileHit.x >= 0 && tileHit.x < 10 && tileHit.y >= 0 && tileHit.y < 10)  //Board touch
             {
-                if(player1Turn)
-                    boardP2.shoot(tileX, tileY);
-                else
-                    boardP1.shoot(tileX, tileY);
-                player1Turn = !player1Turn;
+                Board b = (player1Turn) ? boardP2 : boardP1;
+                if(!b.getTile(tileHit.x, tileHit.y).isShot() && !b.shoot(tileHit.x, tileHit.y))
+                    player1Turn = !player1Turn;
             }
 
         }
-        else
+
+    }
+
+    private boolean canPlace()
+    {
+        Ship p = new Ship(tempRotation, selected, lastTileTouched.x, lastTileTouched.y);
+        if(player1Turn)
         {
-            if(gameStage == GameStage.Player1Ships || gameStage == GameStage.Player2Ships)
-            {
-//                if(x)
-            }
+            return boardP1.canPlace(p);
         }
+        return boardP2.canPlace(p);
     }
 
 
@@ -291,43 +502,65 @@ public class Game extends Activity {
         front = BitmapFactory.decodeResource(res, R.drawable.front);
         xMark = BitmapFactory.decodeResource(res, R.drawable.xsign);
         explosion = BitmapFactory.decodeResource(res, R.drawable.explosion);
+        Matrix matrix = new Matrix();
+        matrix.postRotate(180);
+        arrow[0] = BitmapFactory.decodeResource(res, R.drawable.arrow);
+        arrow[0] = Bitmap.createScaledBitmap(arrow[0], squareSize*2, squareSize, false);
+        arrow[1] = Bitmap.createBitmap(arrow[0], 0,0, arrow[0].getWidth(), arrow[0].getHeight(), matrix, true);
+
 
         back = Bitmap.createScaledBitmap(back, squareSize, squareSize, false);
         mid = Bitmap.createScaledBitmap(mid, squareSize, squareSize, false);
         front = Bitmap.createScaledBitmap(front, squareSize, squareSize, false);
-        xMark = Bitmap.createScaledBitmap(xMark, squareSize, squareSize, false);
-        explosion = Bitmap.createScaledBitmap(explosion, squareSize, squareSize, false);
+
+
+        xMark = Bitmap.createScaledBitmap(xMark, (int)gameSquareSize , (int)gameSquareSize, false);
+        explosion = Bitmap.createScaledBitmap(explosion, (int)gameSquareSize, (int)gameSquareSize, false);
 
     }
 
 
-    public void placeShip(boolean player1, int x, int y, Rotation r, ShipType t)
+    public void placeShip(int x, int y, Rotation r, ShipType t)
     {
 
         Ship ship = new Ship(r, t, x, y);
-        placeShip(player1, ship);
+        placeShip(ship);
 
     }
 
-    public void placeShip(boolean player1, Ship ship)
+    public void resetShips()
     {
-        if(player1)
+        if(player1Turn)
         {
-            if(p1Fleet.contains(ship.type))
-            {
-                this.player1.add(ship);
-                boardP1.setShip(ship);
-                p1Fleet.remove(ship.type);
-            }
+            p1Fleet = ShipType.getFleetV2();
+            boardP1 = new Board();
+            player1.clear();
+
         }
         else
         {
-            if(p2Fleet.contains(ship.type))
-            {
-                this.player2.add(ship);
-                boardP2.setShip(ship);
-                p2Fleet.remove(ship.type);
-            }
+            p2Fleet = ShipType.getFleetV2();
+            boardP2 = new Board();
+            player2.clear();
+        }
+        tempShip = null;
+        selected = null;
+        tempCanPlace = true;
+    }
+
+    public void placeShip(Ship ship)
+    {
+        if(player1Turn)
+        {
+            this.player1.add(ship);
+            boardP1.setShip(ship);
+            p1Fleet.remove(ship.type);
+        }
+        else
+        {
+            this.player2.add(ship);
+            boardP2.setShip(ship);
+            p2Fleet.remove(ship.type);
         }
 
     }
@@ -374,6 +607,7 @@ public class Game extends Activity {
 
     public Bitmap createShipPic(ShipType type, Rotation rotation)
     {
+        int squareSize = (gameStage == GameStage.Game) ? (int)gameSquareSize : this.squareSize;
         int index = type.ordinal()-1;
         if(rotation == Rotation.HORIZONTAL)
             index += 4;
@@ -419,6 +653,9 @@ public class Game extends Activity {
 
         return createShipPic(type, rotation);
     }
+
+
+
     public Bitmap createShipPic(Ship ship)
     {
         return createShipPic(ship.type, ship.rotation);
@@ -446,6 +683,7 @@ public class Game extends Activity {
                 drawGame();
                 break;
         }
+        ui.drawElements(cv);
         bitmap = buffer.copy(buffer.getConfig(), true);
 
         canvas.setImageBitmap(bitmap);
@@ -454,21 +692,84 @@ public class Game extends Activity {
 
     private void drawGame()
     {
+        clear(backgroundColor);
+
+        drawGrid(offsetP1.x, offsetP1.y, squareSize*0.85f);
+        drawGrid(offsetP2.x, offsetP2.y, squareSize*0.85f);
+
+        drawTextures(offsetP1.x, offsetP1.y, true, squareSize*0.85f);
+        drawTextures(offsetP2.x, offsetP2.y, false, squareSize*0.85f);
+
+        drawTurn();
+
+
+
+
     }
+
+    private void drawTurn()
+    {
+        Point arr = new Point(convert(46.5, true), convert(48, false));
+        Bitmap ar = (player1Turn) ? arrow[0] : arrow[1];
+        cv.drawBitmap(ar, arr.x, arr.y, null);
+
+        Paint p = new Paint();
+        p.setColor(Color.BLACK);
+        p.setTextSize(convert(5, true));
+
+        String text = "Player " + ((player1Turn) ? "1" : "2") + " turn to shoot";
+        cv.drawText(text, convert(30, true), convert(10, false), p);
+    }
+
+    private void drawTextures(int xOff, int yOff, boolean player, float squareSize)
+    {
+        Board b = (player) ? boardP1 : boardP2;
+
+
+        for(Ship p : (player) ? player1 : player2)
+        {
+            if(p.shipSank())
+                cv.drawBitmap(createShipPic(p), xOff + p.x*squareSize, yOff + p.y*squareSize, null);
+        }
+
+
+        for(int i = 0; i < 10; i++)
+        {
+            for(int j = 0; j < 10; j++)
+            {
+                if(b.getTile(i, j).isShot())
+                {
+                    if(b.hasShip(i, j))
+                        cv.drawBitmap(explosion, xOff + i * squareSize, yOff + j * squareSize, null);
+                    else
+                        cv.drawBitmap(xMark, xOff + i * squareSize, yOff + j * squareSize, null);
+                }
+            }
+        }
+    }
+
+
+
+    private void clear(int color)
+    {
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.FILL);
+        cv.drawRect(0,0,screenWidth, screenHeight, paint);
+    }
+
 
     private void drawPassing()
     {
+        clear(backgroundColor);
+        paint.setColor(Color.BLACK);
+        paint.setTextSize(convert(6, true));
+        cv.drawText("GET TO OTHER PLAYER PLEASE", convert(10, true), convert(20, false), paint);
+
     }
 
 
-    public void drawBackground()
-    {
-        paint.setColor(Color.rgb(240,240, 240));
-        paint.setStyle(Paint.Style.FILL);
-        cv.drawRect(new Rect(0, 0, screenWidth, screenHeight), paint);
-    }
 
-    public void drawGrid(int x, int y)
+    public void drawGrid(int x, int y, float square)
     {
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(5);
@@ -477,79 +778,60 @@ public class Game extends Activity {
         {
             for(int j = 0; j < 10; j++)
             {
-                cv.drawRect( x + i*squareSize, y + j*squareSize, x + (i+1)*squareSize, y +  (j+1)*squareSize, paint);
+                cv.drawRect( x + i*square, y + j*square, x + (i+1)*square, y +  (j+1)*square, paint);
             }
         }
     }
 
 
 
-    public void drawFleetPlacing()   //The actual drawing
+    public void drawFleetPlacing()  
     {
-        drawBackground();
+        clear(backgroundColor);
 
-        drawGrid(offsetX, offsetY);
+        drawGrid(offsetX, offsetY, squareSize);
 
         drawChoosingShips();
 
         drawTempShip();
 
-        drawButtons();
 
 
-
-        for(Ship p : player1)
+        for(Ship p : (player1Turn) ? player1 : player2)
         {
             cv.drawBitmap(createShipPic(p), offsetX + p.x*squareSize, offsetY + p.y*squareSize, null);
         }
-
-        for(int i = 0; i < 10; i++)
-        {
-            for(int j = 0; j < 10; j++)
-            {
-                if(boardP1.getTile(i, j).isShot())
-                {
-                    if(boardP1.hasShip(i, j))
-                        cv.drawBitmap(explosion, offsetX + i * squareSize, offsetY + j * squareSize, null);
-                    else
-                        cv.drawBitmap(xMark, offsetX + i * squareSize, offsetY + j * squareSize, null);
-                }
-            }
-        }
-
-
-
-
-
-
 
     }
 
     private void drawTempShip()
     {
-        if(tempShip != null)
-            cv.drawBitmap(createShipPic(tempShip, (tempCanPlace) ? ColorFilter.Green : ColorFilter.Red), offsetX + tempShip.x*squareSize, offsetY + tempShip.y*squareSize, null);
+        try
+        {
+            if(tempShip != null)
+                cv.drawBitmap(createShipPic(tempShip, (tempCanPlace) ? ColorFilter.Green : ColorFilter.Red), offsetX + tempShip.x*squareSize, offsetY + tempShip.y*squareSize, null);
+        }
+        catch (NullPointerException ee)
+        {
+            Log.v("dema.battleships", "Null pointer at temp ship "); //I don't know why this happens actually
+        }
     }
 
 
 
-    private void drawButtons()
-    {
-        paint.setColor(Color.BLACK);
-        paint.setStyle(Paint.Style.FILL);
-        cv.drawRect(rotate, paint);
-
-        paint.setColor(Color.RED);
-        cv.drawRect(place, paint);
-    }
 
     private void drawChoosingShips()
     {
 
         paint.setTextSize(convert(3, true));
         paint.setStyle(Paint.Style.FILL);
+        String place = "Player ";
+        if(player1Turn)
+            place += 1 + " ships";
+        else
+            place += 2 + " ships";
 
-        cv.drawText("Place ships", convert(65, true), convert(7, false), paint);
+        cv.drawText(place, convert(65, true), convert(7, false), paint);
         for(int i = 0; i < 4; i++)
         {
             cv.drawText("X " + countFleet(ShipType.values()[i+1], (player1Turn) ? p1Fleet : p2Fleet), shipSelec[i].left - convert(5, true), shipSelec[i].top + convert(6.5, false), paint);
