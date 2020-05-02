@@ -3,7 +3,7 @@ package dema.battleships;
 import java.util.ArrayList;
 
 public enum ShipType {
-    CELL1,
+    CELL1, //UNUSED
     CELL2,
     CELL3,
     CELL4,

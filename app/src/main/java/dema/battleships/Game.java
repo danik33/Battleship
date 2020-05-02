@@ -21,6 +21,7 @@ import java.util.ArrayList;
 
 import dema.battleships.dema.battleships.UI.Action;
 import dema.battleships.dema.battleships.UI.MyButton;
+import dema.battleships.dema.battleships.UI.Pane;
 import dema.battleships.dema.battleships.UI.UI;
 
 import static dema.battleships.ColorFilter.Normal;
@@ -61,6 +62,7 @@ public class Game extends Activity {
     boolean player1Turn;
     ArrayList<ShipType> p1Fleet, p2Fleet;
     MyButton setShip, rotateButton, reset, random, next;
+    Pane endGame;
 
     Bitmap[] ships;
 
@@ -223,7 +225,7 @@ public class Game extends Activity {
 
     }
 
-    private void initUI()
+    private void  initUI()
     {
         ui = new UI();
         setShip = new MyButton(convert(53, true), convert(65, false), (int)(squareSize*1.5), (int)(squareSize*1.5));
@@ -305,11 +307,15 @@ public class Game extends Activity {
             }
         });
 
-        ui.addButton(setShip);
-        ui.addButton(rotateButton);
-        ui.addButton(reset);
-        ui.addButton(random);
-        ui.addButton(next);
+
+
+
+
+        ui.addElement(setShip);
+        ui.addElement(rotateButton);
+        ui.addElement(reset);
+        ui.addElement(random);
+        ui.addElement(next);
     }
 
     private void nextStage()
@@ -462,9 +468,20 @@ public class Game extends Activity {
                 Board b = (player1Turn) ? boardP2 : boardP1;
                 if(!b.getTile(tileHit.x, tileHit.y).isShot() && !b.shoot(tileHit.x, tileHit.y))
                     player1Turn = !player1Turn;
+                if(b.defeated())
+                {
+                    endGame(!player1Turn);
+                }
+
             }
 
         }
+
+    }
+
+    private void endGame(boolean b)
+    {
+        String text = (b) ? "Player 1 won." : "Player 2 won.";
 
     }
 
@@ -750,6 +767,8 @@ public class Game extends Activity {
 
 
 
+
+
     private void clear(int color)
     {
         paint.setColor(Color.WHITE);
@@ -785,7 +804,7 @@ public class Game extends Activity {
 
 
 
-    public void drawFleetPlacing()  
+    public void drawFleetPlacing()
     {
         clear(backgroundColor);
 

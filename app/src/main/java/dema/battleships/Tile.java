@@ -10,11 +10,6 @@ public class Tile {
         ship = false;
     }
 
-    public Tile(boolean ship)
-    {
-        this.ship = ship;
-    }
-
     public boolean isShot()
     {
         return this.beenshot;

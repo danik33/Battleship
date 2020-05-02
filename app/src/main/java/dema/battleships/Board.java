@@ -24,8 +24,19 @@ public class Board {
             }
         }
         ships = new ArrayList<Ship>();
-
     }
+
+    public boolean defeated()
+    {
+        boolean flag = true;
+        for(Ship s: ships)
+        {
+            if(!s.shipSank())
+                flag = false;
+        }
+        return flag;
+    }
+
 
     public void setShip(Ship s)
     {

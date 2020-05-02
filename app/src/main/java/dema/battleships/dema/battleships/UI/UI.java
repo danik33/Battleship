@@ -8,32 +8,28 @@ import java.util.ArrayList;
 public class UI {
 
 
-    private ArrayList<MyButton> buttons;  //Could be any other ui elements if needed
+    private ArrayList<Element> elements;
 
     public UI(){
-        buttons = new ArrayList<>();
+        elements = new ArrayList<>();
     }
 
 
-    public void addButton(MyButton btn)
+    public void addElement(Element el)
     {
-        buttons.add(btn);
+        elements.add(el);
     }
 
     public boolean press(int x, int y)
     {
         boolean hit = false;
-        for(MyButton b : buttons)
+        for(Element b : elements)
         {
             if(new Rect(x, y, x+1, y+1).intersect(b.getRect()))
             {
-                if(b.getVisible())
+                if(b.isVisible())
                 {
-                    if(b.act != null)
-                    {
-                        b.act.act();
-                        hit = true;
-                    }
+                    b.press(x-b.getX(), y-b.getY());
                 }
             }
         }
@@ -44,9 +40,9 @@ public class UI {
 
     public void drawElements(Canvas cv)
     {
-        for(MyButton b : buttons)
+        for(Element b : elements)
         {
-            if(b.getVisible())
+            if(b.isVisible())
                 b.draw(cv);
         }
     }
