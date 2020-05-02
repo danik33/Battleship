@@ -27,6 +27,17 @@ public class Board {
 
     }
 
+    public boolean defeated()
+    {
+        boolean flag = true;
+        for(Ship s : ships)
+        {
+            if(!s.shipSank())
+                flag = false;
+        }
+        return flag;
+    }
+
     public void setShip(Ship s)
     {
         int x = s.x, y = s.y;

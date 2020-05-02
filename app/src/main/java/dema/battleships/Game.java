@@ -1,6 +1,7 @@
 package dema.battleships;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -43,6 +44,7 @@ public class Game extends Activity {
 
     GameStage gameStage;
 
+    int touches = 0;
 
     int screenWidth, screenHeight;
     int x;
@@ -61,6 +63,7 @@ public class Game extends Activity {
     boolean player1Turn;
     ArrayList<ShipType> p1Fleet, p2Fleet;
     MyButton setShip, rotateButton, reset, random, next;
+    MyButton mainMenu, replay;
 
     Bitmap[] ships;
 
@@ -305,6 +308,33 @@ public class Game extends Activity {
             }
         });
 
+
+        mainMenu = new MyButton(convert(25, true), convert(55, false), squareSize*4, squareSize*2);
+        mainMenu.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.mainmenu));
+        mainMenu.setVisible(false);
+        mainMenu.setAction(new Action() {
+            @Override
+            public void act()
+            {
+                Intent t = new Intent(getApplicationContext(), MainActivity.class);
+                startActivity(t);
+            }
+        });
+
+        replay = new MyButton(convert(60, true), convert(55, false), squareSize*4, squareSize*2);
+        replay.setImage(BitmapFactory.decodeResource(getApplicationContext().getResources(),R.drawable.playagain));
+        replay.setVisible(false);
+        replay.setAction(new Action() {
+            @Override
+            public void act()
+            {
+                Intent t = new Intent(getApplicationContext(), Game.class);
+                startActivity(t);
+            }
+        });
+
+        ui.addButton(replay);
+        ui.addButton(mainMenu);
         ui.addButton(setShip);
         ui.addButton(rotateButton);
         ui.addButton(reset);
@@ -460,12 +490,26 @@ public class Game extends Activity {
             if (tileHit.x >= 0 && tileHit.x < 10 && tileHit.y >= 0 && tileHit.y < 10)  //Board touch
             {
                 Board b = (player1Turn) ? boardP2 : boardP1;
-                if(!b.getTile(tileHit.x, tileHit.y).isShot() && !b.shoot(tileHit.x, tileHit.y))
+                if(!b.getTile(tileHit.x, tileHit.y).isShot() && !b.shoot(tileHit.x, tileHit.y)) {
                     player1Turn = !player1Turn;
+                    touches++;
+                }
+                if(touches > 10 || b.defeated())
+                {
+                    endGame();
+                }
             }
+
 
         }
 
+    }
+
+    private void endGame()
+    {
+        nextStage();
+        mainMenu.setVisible(true);
+        replay.setVisible(true);
     }
 
     private boolean canPlace()
@@ -682,12 +726,40 @@ public class Game extends Activity {
             case Game:
                 drawGame();
                 break;
+            case PostGame:
+                drawPostGame();
+                break;
         }
         ui.drawElements(cv);
         bitmap = buffer.copy(buffer.getConfig(), true);
 
         canvas.setImageBitmap(bitmap);
         canvas.invalidate();
+    }
+
+    public void drawPostGame()
+    {
+        drawGame();
+        clear(Color.argb(70, 0,0,0));
+
+        paint.setColor(Color.argb(170, 40, 170, 40));
+        paint.setStrokeWidth(5);
+        paint.setStyle(Paint.Style.FILL);
+        cv.drawRoundRect(convert(15, true), convert(20, false), convert(85, true), convert(80, false), 50, 50, paint);
+
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.STROKE);
+        cv.drawRoundRect(convert(15, true), convert(20, false), convert(85, true), convert(80, false), 50, 50, paint);
+
+        paint.setColor(Color.BLACK);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTextSize(convert(10, true));
+        String message = (!player1Turn) ? "Player 1 won" : "Player 2 won";
+        cv.drawText( message, convert(20, true), convert(37, false), paint);
+
+
+
+
     }
 
     private void drawGame()
@@ -752,7 +824,7 @@ public class Game extends Activity {
 
     private void clear(int color)
     {
-        paint.setColor(Color.WHITE);
+        paint.setColor(color);
         paint.setStyle(Paint.Style.FILL);
         cv.drawRect(0,0,screenWidth, screenHeight, paint);
     }
